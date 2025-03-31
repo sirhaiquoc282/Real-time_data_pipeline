@@ -1,0 +1,265 @@
+version: '2'
+
+x-airflow-common:
+    &airflow-common
+    image: apache/airflow:slim-2.10.5-python3.11
+    environment:
+    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/airflow
+    - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+    volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/config/airflow.cfg:/opt/airflow/config/airflow.cfg
+    depends_on:
+    - airflow-metadata
+
+x-kafka-common:
+    &kafka-common
+    image: confluentinc/cp-kafka:7.6.5
+    networks:
+        - stream-net
+    environment:
+        &kafka-common-env
+        - KAFKA_PROCESS_ROLES=broker,controller
+        - KAFKA_CONTROLLER_QUORUM_VOTERS="0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093"
+        - CLUSTER_ID="2qVoY3q1Q5O5hH1XVvqLmg"
+        - KAFKA_LISTENERS="CONTROLLER://:9093,INTERNAL://:29092,DOCKER_NETWORK://:9092,EXTERNAL://0.0.0.0:9094"
+        - KAFKA_ADVERTISED_LISTENERS="INTERNAL://kafka-0:29092,DOCKER_NETWORK://kafka-0:9092,EXTERNAL://localhost:9094"
+        - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP="CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,DOCKER_NETWORK:SASL_PLAINTEXT,EXTERNAL:SASL_PLAINTEXT"
+        - KAFKA_CONTROLLER_LISTENER_NAMES="CONTROLLER"
+        - KAFKA_INTER_BROKER_LISTENER_NAME="INTERNAL"
+        - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+        - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+        - KAFKA_AUTO_CREATE_TOPICS_ENABLED="true"
+        - KAFKA_NUM_PARTITIONS=3
+        - KAFKA_SASL_ENABLED_MECHANISMS="PLAIN"
+        - KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL="PLAIN"
+        - KAFKA_OPTS="-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
+
+
+services:
+  kafka-0:
+    <<: *kafka-common
+    container_name: kafka-0
+    hostname: kafka-0
+    volumes:
+      - kafka-data-0:/var/lib/kafka/data
+      - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+    ports:
+      - "9094:9094"
+    environment:
+        - KAFKA_NODE_ID=0
+        - KAFKA_ADVERTISED_LISTENERS="INTERNAL://kafka-0:29092,DOCKER_NETWORK://kafka-0:9092,EXTERNAL://localhost:9094"
+        <<: *kafka-common-env
+
+  kafka-1:
+    image: confluentinc/cp-kafka:7.6.5
+    container_name: kafka-1
+    hostname: kafka-1
+    networks:
+      - stream-net
+    volumes:
+      - kafka-data-1:/var/lib/kafka/data
+      - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+    ports:
+      - "9095:9094"
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_QUORUM_VOTERS="0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093"
+      - CLUSTER_ID="2qVoY3q1Q5O5hH1XVvqLmg"
+      - KAFKA_LISTENERS="CONTROLLER://:9093,INTERNAL://:29092,DOCKER_NETWORK://:9092,EXTERNAL://0.0.0.0:9094"
+      - KAFKA_ADVERTISED_LISTENERS="INTERNAL://kafka-1:29092,DOCKER_NETWORK://kafka-1:9092,EXTERNAL://localhost:9095"
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP="CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,DOCKER_NETWORK:SASL_PLAINTEXT,EXTERNAL:SASL_PLAINTEXT"
+      - KAFKA_CONTROLLER_LISTENER_NAMES="CONTROLLER"
+      - KAFKA_INTER_BROKER_LISTENER_NAME="INTERNAL"
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLED="true"
+      - KAFKA_NUM_PARTITIONS=3
+      - KAFKA_SASL_ENABLED_MECHANISMS="PLAIN"
+      - KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL="PLAIN"
+      - KAFKA_OPTS="-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
+
+  kafka-2:
+    image: confluentinc/cp-kafka:7.6.5
+    container_name: kafka-2
+    hostname: kafka-2
+    networks:
+      - stream-net
+    volumes:
+      - kafka-data-2:/var/lib/kafka/data
+      - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+    ports:
+      - "9096:9094"
+    environment:
+      - KAFKA_NODE_ID=2
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_QUORUM_VOTERS="0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093"
+      - CLUSTER_ID="2qVoY3q1Q5O5hH1XVvqLmg"
+      - KAFKA_LISTENERS="CONTROLLER://:9093,INTERNAL://:29092,DOCKER_NETWORK://:9092,EXTERNAL://0.0.0.0:9094"
+      - KAFKA_ADVERTISED_LISTENERS="INTERNAL://kafka-2:29092,DOCKER_NETWORK://kafka-2:9092,EXTERNAL://localhost:9096"
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP="CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,DOCKER_NETWORK:SASL_PLAINTEXT,EXTERNAL:SASL_PLAINTEXT"
+      - KAFKA_CONTROLLER_LISTENER_NAMES="CONTROLLER"
+      - KAFKA_INTER_BROKER_LISTENER_NAME="INTERNAL"
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=3
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=3
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLED="true"
+      - KAFKA_NUM_PARTITIONS=3
+      - KAFKA_SASL_ENABLED_MECHANISMS="PLAIN"
+      - KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL="PLAIN"
+      - KAFKA_OPTS="-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
+
+  akhq:
+    image: tchiotludo/akhq:0.25.1
+    container_name: akhq
+    ports:
+      - "8080:8080"
+    networks:
+      - stream-net
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            kafka-server:
+              properties:
+                bootstrap.servers: "kafka-0:9092,kafka-1:9092,kafka-2:9092"
+                security.protocol: SASL_PLAINTEXT
+                sasl.mechanism: PLAIN
+                sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="kafka" password="admin";
+          security:
+            default-group: no-roles
+            basic-auth:
+              - username: admin
+                password: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+                passwordHash: SHA256
+                groups:
+                  - admin
+            micronaut:
+              security:
+                enabled: true
+                token:
+                  jwt:
+                    signatures:
+                      secret:
+                        generator:
+                          secret: "6661a0975cd371c713f66a94bcd51ec874e0b040aec61f025964ad5fe7ee3120"
+  spark-master:
+    image: bitnami/spark:3.5.5
+    container_name: spark-master
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    volumes:
+      - spark_data:/data
+    networks:
+      - stream-net
+
+  spark-worker-1:
+    image: bitnami/spark:3.5.5
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    depends_on:
+      - spark-master
+    volumes:
+      - spark_data:/data
+    networks:
+      - stream-net
+
+  spark-worker-2:
+    image: bitnami/spark:3.5.5
+    container_name: spark-worker-2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    depends_on:
+      - spark-master
+    volumes:
+      - spark_data:/data
+    networks:
+      - stream-net
+
+  airflow-metadata:
+    image: postgres:16
+    container_name: airflow-metadata
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=airflow
+    ports:
+      - "5433:5432"
+    networks:
+      - stream-net
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow users list || (
+          airflow db init &&
+          airflow users create \
+            --role Admin \
+            --username airflow \
+            --password airflow \
+            --email airflow@airflow.com \
+            --firstname airflow \
+            --lastname airflow
+        )
+    networks:
+      - stream-net
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: airflow webserver
+    ports:
+      - "8082:8080"
+    restart: always
+    networks:
+      - stream-net
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: airflow scheduler
+    restart: always
+    networks:
+      - stream-net
+
+networks:
+  stream-net:
+    driver: bridge
+
+volumes:
+  kafka-data-0:
+  kafka-data-1:
+  kafka-data-2:
+  spark_data:
