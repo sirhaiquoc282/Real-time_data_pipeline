@@ -1,19 +1,20 @@
 version: '2'
 
 x-airflow-common: &airflow-common
-    image: apache/airflow:slim-2.10.5-python3.11
+    build:
+        context: ./airflow
+        dockerfile: Dockerfile
     environment:
+        - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@airflow-data:5432/airflow
         - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-        - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@airflow-metadata:5432/airflow
         - AIRFLOW__CORE__LOAD_EXAMPLES=False
-        - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+        - AIRFLOW__LOGGING__LOGGING_LEVEL=INFO
     volumes:
         - ./airflow/dags:/opt/airflow/dags
         - ./airflow/plugins:/opt/airflow/plugins
         - ./airflow/logs:/opt/airflow/logs
+        - ./scripts:/opt/airflow/scripts
         - ./airflow/config/airflow.cfg:/opt/airflow/airflow.cfg
-    depends_on:
-        - airflow-metadata
     networks:
         - stream-net
 
@@ -44,7 +45,7 @@ services:
         hostname: kafka-0
         volumes:
             - kafka-data-0:/var/lib/kafka/data
-            - ./kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+            - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
         ports:
             - "9094:9094"
         environment:
@@ -58,7 +59,7 @@ services:
         hostname: kafka-1
         volumes:
             - kafka-data-1:/var/lib/kafka/data
-            - ./kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+            - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
         ports:
             - "9095:9094"
         environment:
@@ -72,7 +73,7 @@ services:
         hostname: kafka-2
         volumes:
             - kafka-data-2:/var/lib/kafka/data
-            - ./kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+            - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
         ports:
             - "9096:9094"
         environment:
@@ -101,19 +102,9 @@ services:
                     default-group: no-roles
                     basic-auth:
                       - username: admin
-                        password: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
-                        passwordHash: SHA256
+                        password: admin
                         groups:
                           - admin
-                    micronaut:
-                      security:
-                        enabled: true
-                        token:
-                          jwt:
-                            signatures:
-                              secret:
-                                generator:
-                                  secret: "6661a0975cd371c713f66a94bcd51ec874e0b040aec61f025964ad5fe7ee3120"
     spark-master:
         image: bitnami/spark:3.5.5
         container_name: spark-master
@@ -174,32 +165,39 @@ services:
 
     airflow-data:
         image: postgres:16
-        container_name: airflow-metadata
+        container_name: airflow-data
+        hostname: airflow-data
         environment:
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=postgres
             - POSTGRES_DB=airflow
-        ports:
-            - "5432:5432"
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
         networks:
             - stream-net
+
     airflow-init:
         <<: *airflow-common
         container_name: airflow-init
         entrypoint: /bin/bash
-        command:
-            - -c
-            - |
-              airflow users list || (
-                airflow db init &&
+        command: >
+            -c 'airflow db init &&
                 airflow users create \
-                  --role Admin \
-                  --username airflow \
-                  --password airflow \
-                  --email airflow@airflow.com \
-                  --firstname airflow \
-                  --lastname airflow
-              )
+                --role Admin \
+                --username airflow \
+                --password airflow \
+                --email airflow@airflow.com \
+                --firstname airflow \
+                --lastname airflow;'
+        depends_on:
+            airflow-data:
+                condition: service_healthy
+        restart: on-failure
 
     airflow-webserver:
         <<: *airflow-common
@@ -207,21 +205,17 @@ services:
         command: airflow webserver
         ports:
             - "8082:8080"
-        restart: always
+        restart: unless-stopped
         depends_on:
-            - airflow-data
             - airflow-init
-            - spark-master
 
     airflow-scheduler:
         <<: *airflow-common
         container_name: airflow-scheduler
         command: airflow scheduler
-        restart: always
+        restart: unless-stopped
         depends_on:
-            - airflow-data
             - airflow-init
-            - spark-master
 
 networks:
     stream-net:
@@ -232,4 +226,4 @@ volumes:
     kafka-data-1:
     kafka-data-2:
     spark_data:
-    airflow-data:
+    postgres_data:
