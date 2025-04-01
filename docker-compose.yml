@@ -89,22 +89,34 @@ services:
         networks:
             - stream-net
         environment:
-            AKHQ_CONFIGURATION: |
+            AKHQ_CONFIGURATION: |+
                 akhq:
-                  connections:
-                    kafka-server:
-                      properties:
-                        bootstrap.servers: "kafka-0:9092,kafka-1:9092,kafka-2:9092"
-                        security.protocol: SASL_PLAINTEXT
-                        sasl.mechanism: PLAIN
-                        sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="kafka" password="admin";
+                    connections:
+                      kafka-server:
+                        properties:
+                          bootstrap.servers: "kafka-0:9092,kafka-1:9092,kafka-2:9092"
+                          security.protocol: SASL_PLAINTEXT
+                          sasl.mechanism: PLAIN
+                          sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="kafka" password="admin";
+                    security:
+                      default-group: no-roles
+                      basic-auth:
+                        - username: admin
+                          password: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+                          passwordHash: SHA256
+                          groups:
+                            - admin
+                micronaut:
                   security:
-                    default-group: no-roles
-                    basic-auth:
-                      - username: admin
-                        password: admin
-                        groups:
-                          - admin
+                    enabled: true
+                    token:
+                      jwt:
+                        signatures:
+                          secret:
+                            generator:
+                              secret: "6661a0975cd371c713f66a94bcd51ec874e0b040aec61f025964ad5fe7ee3120"
+
+                            
     spark-master:
         image: bitnami/spark:3.5.5
         container_name: spark-master
@@ -220,6 +232,7 @@ services:
 networks:
     stream-net:
         driver: bridge
+        attachable: true
 
 volumes:
     kafka-data-0:
