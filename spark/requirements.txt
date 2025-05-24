@@ -1,0 +1,5 @@
+py4j==0.10.9.7
+pyyaml==6.0.2
+configparser==7.2.0
+user-agents==0.1.0
+configparser==7.2.0
