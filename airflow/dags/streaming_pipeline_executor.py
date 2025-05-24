@@ -4,28 +4,12 @@ from operators.kafka_health_check import KafkaHealthCheckOperator
 from operators.mongodb_health_check import MongoDBHealthCheckOperator
 from operators.spark_health_check import SparkHealthCheckOperator
 from operators.postgresql_health_check import PostgreSQLHealthCheckOperator
-from airflow.providers.slack.operators.slack_webhook import SlackWebhookOperator
 from pendulum import datetime, duration
-
-def send_slack_alert(context):
-    message = f"""
-    :fire: **Pipeline Alert**
-    *Task*: `{context['task_instance'].task_id}`
-    *DAG*: `{context['dag'].dag_id}`
-    *Execution Time*: `{context['execution_date']}`
-    *Logs*: {context['task_instance'].log_url}
-    """
-    SlackWebhookOperator(
-        task_id='slack_alert',
-        slack_webhook_conn_id='slack_webhook',
-        message=message
-    ).execute(context)
 
 default_args = {
     'owner': 'Nguyen Hai Quoc',
     'retries': 3,
     'retry_delay': duration(minutes=5),
-    'on_failure_callback': send_slack_alert,
     'start_date': datetime(2025,5,22)
 }
 
