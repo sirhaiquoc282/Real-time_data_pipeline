@@ -1,4 +1,5 @@
 from kafka import KafkaConsumer, KafkaProducer
+from pymongo import MongoClient
 import json
 
 consumer = KafkaConsumer(
@@ -12,21 +13,29 @@ consumer = KafkaConsumer(
     enable_auto_commit=True,
     value_deserializer=lambda m: json.loads(m.decode("utf-8")),
 )
+print("done consumer")
 
-
-producer = KafkaProducer(
-    bootstrap_servers="localhost:9094,localhost:9095,localhost:9096",
+producer =  KafkaProducer(
+    bootstrap_servers="localhost:9094",
     security_protocol="SASL_PLAINTEXT",
     sasl_mechanism="PLAIN",
     sasl_plain_username="kafka",
     sasl_plain_password="admin",
-    value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-)
+    value_serializer=lambda v: json.dumps(v).encode("utf-8"))
 
-
+print("done producer")
 for message in consumer:
-    data = message.value
-    producer.send("product_views", data)
-    producer.flush()
-    print(data)
-    
+    event = message.value
+    producer.send(topic="product_views", value=event)
+    print(f"Inserted: {event}")
+
+# mongo_client = MongoClient('mongodb://localhost:27017/')
+# db = mongo_client['glamira']
+# collection = db['events']
+
+# for msg in consumer:
+#     event = msg.value
+#     collection.insert_one(event)
+#     print(f"Inserted: {event}")
+
+

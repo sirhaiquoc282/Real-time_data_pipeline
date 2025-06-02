@@ -1,7 +1,6 @@
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from operators.kafka_health_check import KafkaHealthCheckOperator
-from operators.mongodb_health_check import MongoDBHealthCheckOperator
 from operators.spark_health_check import SparkHealthCheckOperator
 from operators.postgresql_health_check import PostgreSQLHealthCheckOperator
 from pendulum import datetime, duration
@@ -30,12 +29,6 @@ with DAG(
         dag=dag
     )
     
-    health_check_mongodb_task = MongoDBHealthCheckOperator(
-        task_id="health_check_mongodb",
-        uri="mongodb://mongo:mongo@mongodb:27017/glamira",
-        dag=dag
-    )
-    
     health_check_spark_task = SparkHealthCheckOperator(
         task_id="health_check_spark",
         master_url = "spark://spark-master:7077",
@@ -48,10 +41,21 @@ with DAG(
         port=5432,
         user="postgres",
         password="postgres",
+        dbname="glamira",
+        tables=["dim_time", "dim_product", "dim_location", "dim_store", "dim_referrer_url", "dim_browser", "dim_os", "fact_view_event"],
+        dag=dag
+    )
+    
+    submit_streaming_data_pipeline_task = SparkSubmitOperator(
+        task_id="submit_kafka_to_postgresql_data_pipeline",
+        application="/opt/airflow/spark/main/jobs/kafka_to_postgresql.py",
+        conn_id="spark_default",
+        packages="org.postgresql:postgresql:42.7.5",
+        py_files="/opt/airflow/spark/main/main.zip",
         dag=dag
     )
     
 
 
-[health_check_kafka_task, health_check_mongodb_task, health_check_spark_task, health_check_postgres_task]
+[health_check_kafka_task, health_check_spark_task, health_check_postgres_task] >> submit_streaming_data_pipeline_task
 

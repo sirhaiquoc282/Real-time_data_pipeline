@@ -1,0 +1,75 @@
+startDelaySeconds: 0
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+rules:
+  - pattern: 'metrics<name=([^,]+), application=([^>]+)><>Value'
+    name: spark_metric_$1
+    labels:
+      application: "$2"
+    type: GAUGE
+
+  - pattern: 'metrics<name=([^,]+), application=([^,]+), executor=([^>]+)><>Value'
+    name: spark_executor_metric_$1
+    labels:
+      application: "$2"
+      executor: "$3"
+    type: GAUGE
+    
+  - pattern: 'java.lang<type=MemoryPool, name=([^>]+)><Usage>(used|committed|max)'
+    name: jvm_memory_pool_$2_bytes
+    labels:
+      pool: "$1"
+    type: GAUGE
+
+
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>committed'
+    name: jvm_memory_heap_committed_bytes
+    type: GAUGE
+
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>used'
+    name: jvm_memory_heap_used_bytes
+    type: GAUGE
+
+  - pattern: 'java.lang<type=GarbageCollector, name=([^>]+)><CollectionCount>'
+    name: jvm_gc_collection_count
+    labels:
+      gc: "$1"
+    type: COUNTER
+
+  - pattern: 'java.lang<type=GarbageCollector, name=([^>]+)><CollectionTime>'
+    name: jvm_gc_collection_time_milliseconds
+    labels:
+      gc: "$1"
+    type: COUNTER
+
+  - pattern: 'org.apache.spark.sql<type=([^,]+)><>([^:]+)'
+    name: spark_sql_$1_$2
+    type: GAUGE
+
+  - pattern: 'org.apache.spark<type=Stage, stageId=([^,]+)><>(.*)'
+    name: spark_stage_$2
+    labels:
+      stage_id: "$1"
+
+    type: GAUGE
+  - pattern: "java.lang:type=Memory"
+    name: jvm_memory_bytes
+    labels:
+      area: "$2"
+    help: "JVM memory usage"
+    type: GAUGE
+
+  - pattern: 'java.lang:type=GarbageCollector,name=(.*)'
+    name: jvm_gc_collection_seconds
+    labels:
+      gc: "$1"
+    help: "GC duration"
+    type: COUNTER
+
+  - pattern: 'org.apache.spark.executor:name=ExecutorMetrics,instance=(.*),appId=(.*),executorId=(.*)'
+    name: spark_executor_metrics
+    labels:
+      instance: "$1"
+      appId: "$2"
+      executorId: "$3"
