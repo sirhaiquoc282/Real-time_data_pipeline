@@ -15,9 +15,8 @@ x-airflow-common: &airflow-common
         - ./airflow/logs:/opt/airflow/logs
         - ./airflow/includes:/opt/airflow/includes
         - ./airflow/config/config.ini:/opt/airflow/config.ini
-        - ./spark/config:/opt/airflow/spark/config/
-        - ./spark/scripts:/opt/airflow/spark/scripts/
-        - ./spark/src:/opt/airflow/spark/src/
+        - ./spark/main:/opt/airflow/spark/main
+        - ./spark/compressed_spark_jobs:/opt/airflow/spark/compressed_jobs
     networks:
         - stream-net
 
@@ -51,6 +50,7 @@ services:
             - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
         ports:
             - "9094:9094"
+            - "9092:9092"
         environment:
             <<: *kafka-common-env
             KAFKA_NODE_ID: 0
@@ -65,6 +65,7 @@ services:
             - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
         ports:
             - "9095:9094"
+            - "9192:9092"
         environment:
             <<: *kafka-common-env
             KAFKA_NODE_ID: 1
@@ -79,6 +80,7 @@ services:
             - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
         ports:
             - "9096:9094"
+            - "9292:9092"
         environment:
             <<: *kafka-common-env
             KAFKA_NODE_ID: 2
@@ -130,17 +132,20 @@ services:
             - "7077:7077"
             - "8081:8080"
         environment:
-            - SPARK_MODE=master
-            - SPARK_RPC_AUTHENTICATION_ENABLED=no
-            - SPARK_RPC_ENCRYPTION_ENABLED=no
-            - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-            - SPARK_SSL_ENABLED=no
-            - SPARK_USER=spark
+            SPARK_MODE: master
+            SPARK_RPC_AUTHENTICATION_ENABLED: no
+            SPARK_RPC_ENCRYPTION_ENABLED: no
+            SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
+            SPARK_SSL_ENABLED: no
+            SPARK_USER: spark
+            SPARK_MASTER_OPTS: >
+                -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar=5556:/opt/jmx_exporter/config.yaml -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
         volumes:
             - spark_data:/data
-            - ./spark/config:/opt/bitnami/spark/config/
-            - ./spark/scripts:/opt/bitnami/spark/scripts/
-            - ./spark/src:/opt/bitnami/spark/src/
+            - ./spark/main:/opt/bitnami/spark/main
+            - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
+            - ./monitoring/jmx-exporter/configs/spark-jmx-config.yaml:/opt/jmx_exporter/config.yaml
+            - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar
         networks:
             - stream-net
 
@@ -160,13 +165,14 @@ services:
             - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
             - SPARK_SSL_ENABLED=no
             - SPARK_USER=spark
+            - SPARK_MASTER_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+            - SPARK_DAEMON_JAVA_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
         depends_on:
             - spark-master
         volumes:
             - spark_data:/data
-            - ./spark/config:/opt/bitnami/spark/config/
-            - ./spark/scripts:/opt/bitnami/spark/scripts/
-            - ./spark/src:/opt/bitnami/spark/src/
+            - ./spark/main:/opt/bitnami/spark/main
+            - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
         networks:
             - stream-net
 
@@ -186,13 +192,14 @@ services:
             - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
             - SPARK_SSL_ENABLED=no
             - SPARK_USER=spark
+            - SPARK_MASTER_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
+            - SPARK_DAEMON_JAVA_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
         depends_on:
             - spark-master
         volumes:
             - spark_data:/data
-            - ./spark/config:/opt/bitnami/spark/config/
-            - ./spark/scripts:/opt/bitnami/spark/scripts/
-            - ./spark/src:/opt/bitnami/spark/src/
+            - ./spark/main:/opt/bitnami/spark/main
+            - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
         networks:
             - stream-net
 
@@ -264,7 +271,6 @@ services:
             - stream-net
     postgres:
         image: postgres:16
-        container_name: postgres-data
         hostname: postgres-data
         environment:
             - POSTGRES_USER=postgres
@@ -279,6 +285,7 @@ services:
             retries: 5
         volumes:
             - postgres_data:/var/lib/postgresql/data
+            - ./postgres/initdb:/docker-entrypoint-initdb.d
         networks:
             - stream-net
     pgadmin:
@@ -290,19 +297,6 @@ services:
             - "8085:80"
         networks:
             - stream-net
-    # dashboard_db:
-    #     image: postgres:16
-    #     container_name: dashboard_db
-    #     environment:
-    #         - POSTGRES_USER=admin
-    #         - POSTGRES_PASSWORD=admin
-    #         - POSTGRES_DB=dashboard
-    #     ports:
-    #         - "5433:5432"
-    #     volumes:
-    #         - dashboard_data:/var/lib/postgresql/data
-    #     networks:
-    #         - stream-net
     # superset:
     #     image: apache/superset:latest
     #     container_name: superset
@@ -319,33 +313,40 @@ services:
     #     networks:
     #         - stream-net
 
-    # prometheus:
-    #     image: prom/prometheus:latest
-    #     container_name: prometheus
-    #     command:
-    #         - '--config.file=/etc/prometheus/prometheus.yml'
-    #         - '--storage.tsdb.path=/prometheus'
-    #     ports:
-    #         - "9090:9090"
-    #     volumes:
-    #         - ./prometheus:/etc/prometheus
-    #         - prometheus_data:/prometheus
-    #     networks:
-    #         - stream-net
+    prometheus:
+        image: prom/prometheus:latest
+        container_name: prometheus
+        ports:
+            - "9090:9090"
+        volumes:
+            - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+            - prometheus_data:/prometheus
+        networks:
+            - stream-net
 
-    # grafana:
-    #     image: grafana/grafana:latest
-    #     container_name: grafana
-    #     ports:
-    #         - "3000:3000"
-    #     volumes:
-    #         - ./grafana/provisioning:/etc/grafana/provisioning
-    #         - grafana_data:/var/lib/grafana
-    #     environment:
-    #         GF_SECURITY_ADMIN_USER: admin
-    #         GF_SECURITY_ADMIN_PASSWORD: admin
-    #     networks:
-    #         - stream-net
+    grafana:
+        image: grafana/grafana:latest
+        container_name: grafana
+        ports:
+            - "3000:3000"
+        volumes:
+            - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+            - grafana_data:/var/lib/grafana
+        environment:
+            GF_SECURITY_ADMIN_USER: admin
+            GF_SECURITY_ADMIN_PASSWORD: admin
+        networks:
+            - stream-net
+
+    jmx-exporter:
+        image: bitnami/jmx-exporter:latest
+        container_name: jmx-exporter
+        command: >
+            --jmx-url service:jmx:rmi:///jndi/rmi://spark-master:9999/jmxrmi --port 5556
+        ports:
+            - "5556:5556"
+        networks:
+            - stream-net
 
 networks:
     stream-net:
@@ -360,3 +361,5 @@ volumes:
     airflow_data:
     mongo:
     postgres_data:
+    prometheus_data:
+    grafana_data:
