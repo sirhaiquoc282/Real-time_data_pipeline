@@ -76,7 +76,7 @@ def process_dim_product(raw_df: DataFrame) -> DataFrame:
     recommended_product_df = raw_df.filter(col("collection").startswith("product_detail_recommendation"))
     non_recommended_product_df = raw_df.filter(~col("collection").startswith("product_detail_recommendation"))
 
-    recommended_product_df = add_missing_column(recommended_product_df, "viewing_product_id", None)
+    recommended_product_df = add_missing_column(non_recommended_product_df, "viewing_product_id", None)
     recommended_product_df = add_missing_column(recommended_product_df, "product_id", None) 
 
     non_recommended_product_df = add_missing_column(non_recommended_product_df, "product_id", None)

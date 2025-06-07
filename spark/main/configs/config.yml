@@ -1,0 +1,21 @@
+kafka:
+  bootstrap_servers: "kafka-0:9092,kafka-1:9092,kafka-2:9092"
+  security_protocol: "SASL_PLAINTEXT"
+  sasl_mechanism: "PLAIN"
+  sasl_plain_username: "kafka"
+  sasl_plain_password: "admin"
+  topic: "product_views"
+  allowed_collections: 
+    - view_product_detail
+    - select_product_option
+    - select_product_option_quality
+    - product_detail_recommendation_visible
+    - product_detail_recommendation_noticed
+    - product_detail_recommendation_clicked
+
+postgresql:
+  host: "postgres-data"
+  port: 5432
+  dbname: "glamira"
+  user: "postgres"
+  password: "postgres"
