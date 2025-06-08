@@ -2,8 +2,8 @@ py4j==0.10.9.7
 pyyaml==6.0.2
 configparser==7.2.0
 user-agents==2.2.0
-configparser==7.2.0
 IP2Location==8.10.5
 psycopg2-binary==2.9.10
 pymongo==4.11
 kafka-python==2.1.5
+configparser==7.2.0
