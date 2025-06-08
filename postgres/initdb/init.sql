@@ -1,6 +1,6 @@
 \c glamira
 
-CREATE TABLE dim_time (
+CREATE TABLE IF NOT EXISTS dim_time (
     time_id BIGINT PRIMARY KEY,
     timestamp TIMESTAMP,
     hour INT,
@@ -15,39 +15,39 @@ CREATE TABLE dim_time (
     year INT
 );
 
-CREATE TABLE dim_product (
+CREATE TABLE IF NOT EXISTS dim_product (
     product_id INT PRIMARY KEY,
     product_name VARCHAR
 );
 
-CREATE TABLE dim_location (
+CREATE TABLE IF NOT EXISTS dim_location (
     location_id VARCHAR PRIMARY KEY,
     city VARCHAR,
     region VARCHAR,
     country VARCHAR
 );
 
-CREATE TABLE dim_store (
+CREATE TABLE IF NOT EXISTS dim_store (
     store_id INT PRIMARY KEY,
     store_name VARCHAR
 );
 
-CREATE TABLE dim_referrer_url (
+CREATE TABLE IF NOT EXISTS dim_referrer_url (
     referrer_url_id VARCHAR PRIMARY KEY,
     referrer_url TEXT
 );
 
-CREATE TABLE dim_browser (
+CREATE TABLE IF NOT EXISTS dim_browser (
     browser_id VARCHAR PRIMARY KEY,
     browser VARCHAR
 );
 
-CREATE TABLE dim_os (
+CREATE TABLE IF NOT EXISTS dim_os (
     os_id VARCHAR PRIMARY KEY,
     os VARCHAR
 );
 
-CREATE TABLE fact_view_event (
+CREATE TABLE IF NOT EXISTS fact_view_event (
     event_id VARCHAR PRIMARY KEY,
     event_type VARCHAR,
     time_id BIGINT,
