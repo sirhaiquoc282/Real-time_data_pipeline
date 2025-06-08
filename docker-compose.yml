@@ -1,25 +1,5 @@
 version: '3.8'
 
-x-airflow-common: &airflow-common
-    build:
-        context: ./airflow
-        dockerfile: Dockerfile
-    environment:
-        - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@airflow-data:5432/airflow
-        - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-        - AIRFLOW__CORE__LOAD_EXAMPLES=False
-        - AIRFLOW__LOGGING__LOGGING_LEVEL=INFO
-    volumes:
-        - ./airflow/dags:/opt/airflow/dags
-        - ./airflow/plugins:/opt/airflow/plugins
-        - ./airflow/logs:/opt/airflow/logs
-        - ./airflow/includes:/opt/airflow/includes
-        - ./airflow/config/config.ini:/opt/airflow/config.ini
-        - ./spark/main:/opt/airflow/spark/main
-        - ./spark/compressed_spark_jobs:/opt/airflow/spark/compressed_jobs
-    networks:
-        - stream-net
-
 x-kafka-common: &kafka-common
     image: confluentinc/cp-kafka:7.6.5
     networks:
@@ -97,31 +77,31 @@ services:
             AKHQ_CONFIGURATION: |+
                 akhq:
                     connections:
-                      kafka-server:
-                        properties:
-                          bootstrap.servers: "kafka-0:9092,kafka-1:9092,kafka-2:9092"
-                          security.protocol: SASL_PLAINTEXT
-                          sasl.mechanism: PLAIN
-                          sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="kafka" password="admin";
+                        kafka-server:
+                            properties:
+                                bootstrap.servers: "kafka-0:9092,kafka-1:9092,kafka-2:9092"
+                                security.protocol: SASL_PLAINTEXT
+                                sasl.mechanism: PLAIN
+                                sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="kafka" password="admin";
                     security:
-                      default-group: no-roles
-                      basic-auth:
-                        - username: admin
-                          password: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
-                          passwordHash: SHA256
-                          groups:
-                            - admin
+                        default-group: no-roles
+                        basic-auth:
+                            - username: admin
+                                password: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+                                passwordHash: SHA256
+                                groups:
+                                    - admin
                 micronaut:
-                  security:
-                    enabled: true
-                    token:
-                      jwt:
-                        signatures:
-                          secret:
-                            generator:
-                              secret: "6661a0975cd371c713f66a94bcd51ec874e0b040aec61f025964ad5fe7ee3120"
+                    security:
+                        enabled: true
+                        token:
+                            jwt:
+                                signatures:
+                                    secret:
+                                        generator:
+                                            secret: "6661a0975cd371c713f66a94bcd51ec874e0b040aec61f025964ad5fe7ee3120"
 
-                            
+                                        
     spark-master:
         build:
             context: ./spark
@@ -131,12 +111,9 @@ services:
         ports:
             - "7077:7077"
             - "8081:8080"
+            - "4040:4040"
         environment:
             SPARK_MODE: master
-            SPARK_RPC_AUTHENTICATION_ENABLED: no
-            SPARK_RPC_ENCRYPTION_ENABLED: no
-            SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: no
-            SPARK_SSL_ENABLED: no
             SPARK_USER: spark
             SPARK_MASTER_OPTS: >
                 -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar=5556:/opt/jmx_exporter/config.yaml -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
@@ -158,12 +135,6 @@ services:
         environment:
             - SPARK_MODE=worker
             - SPARK_MASTER_URL=spark://spark-master:7077
-            - SPARK_WORKER_MEMORY=2G
-            - SPARK_WORKER_CORES=1
-            - SPARK_RPC_AUTHENTICATION_ENABLED=no
-            - SPARK_RPC_ENCRYPTION_ENABLED=no
-            - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-            - SPARK_SSL_ENABLED=no
             - SPARK_USER=spark
             - SPARK_MASTER_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
             - SPARK_DAEMON_JAVA_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
@@ -185,12 +156,6 @@ services:
         environment:
             - SPARK_MODE=worker
             - SPARK_MASTER_URL=spark://spark-master:7077
-            - SPARK_WORKER_MEMORY=2G
-            - SPARK_WORKER_CORES=1
-            - SPARK_RPC_AUTHENTICATION_ENABLED=no
-            - SPARK_RPC_ENCRYPTION_ENABLED=no
-            - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-            - SPARK_SSL_ENABLED=no
             - SPARK_USER=spark
             - SPARK_MASTER_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
             - SPARK_DAEMON_JAVA_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
@@ -222,7 +187,12 @@ services:
             - stream-net
 
     airflow-init:
-        <<: *airflow-common
+        build:
+            context: ./airflow
+            dockerfile: Dockerfile
+        volumes:
+            - ./airflow/dags:/opt/airflow/dags
+            - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
         container_name: airflow-init
         entrypoint: /bin/bash
         command: >
@@ -238,9 +208,16 @@ services:
             airflow-data:
                 condition: service_healthy
         restart: on-failure
+        networks:
+            - stream-net
 
     airflow-webserver:
-        <<: *airflow-common
+        build:
+            context: ./airflow
+            dockerfile: Dockerfile
+        volumes:
+            - ./airflow/dags:/opt/airflow/dags
+            - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
         container_name: airflow-webserver
         command: airflow webserver
         ports:
@@ -248,27 +225,24 @@ services:
         restart: unless-stopped
         depends_on:
             - airflow-init
+        networks:
+            - stream-net
 
     airflow-scheduler:
-        <<: *airflow-common
+        build:
+            context: ./airflow
+            dockerfile: Dockerfile
+        volumes:
+            - ./airflow/dags:/opt/airflow/dags
+            - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
         container_name: airflow-scheduler
         command: airflow scheduler
         restart: unless-stopped
         depends_on:
             - airflow-init
-    mongodb:
-        image: bitnami/mongodb:latest
-        container_name: mongodb
-        environment:
-            - MONGODB_ROOT_USER=admin
-            - MONGODB_ROOT_PASSWORD=admin
-        ports:
-            - "27018:27017"
-        volumes:
-            - mongo:/bitnami/mongo
-            - ./mongo:/docker-entrypoint-initdb.d
         networks:
             - stream-net
+
     postgres:
         image: postgres:16
         hostname: postgres-data
@@ -297,21 +271,6 @@ services:
             - "8085:80"
         networks:
             - stream-net
-    # superset:
-    #     image: apache/superset:latest
-    #     container_name: superset
-    #     environment:
-    #         - SUPERSET_ENV=production
-    #         - SUPERSET_PORT=8088
-    #         - SUPERSET_USER=admin
-    #         - SUPERSET_PASSWORD=admin
-    #         - SUPERSET_DATABASE_URI=postgresql+psycopg2://admin:admin@dashboard_db:5433/dashboard
-    #     ports:
-    #         - "8088:8088"
-    #     volumes:
-    #         - ./superset:/app/superset
-    #     networks:
-    #         - stream-net
 
     prometheus:
         image: prom/prometheus:latest
@@ -330,23 +289,58 @@ services:
         ports:
             - "3000:3000"
         volumes:
-            - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+            - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+            - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
             - grafana_data:/var/lib/grafana
         environment:
             GF_SECURITY_ADMIN_USER: admin
             GF_SECURITY_ADMIN_PASSWORD: admin
         networks:
             - stream-net
-
-    jmx-exporter:
-        image: bitnami/jmx-exporter:latest
-        container_name: jmx-exporter
-        command: >
-            --jmx-url service:jmx:rmi:///jndi/rmi://spark-master:9999/jmxrmi --port 5556
+    
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+        container_name: elasticsearch
+        environment:
+        - discovery.type=single-node
+        - xpack.security.enabled=false
+        - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
         ports:
-            - "5556:5556"
+        - "9200:9200"
+        - "9300:9300"
+        volumes:
+        - elasticsearch_data:/usr/share/elasticsearch/data
         networks:
             - stream-net
+    
+    kibana:
+        image: docker.elastic.co/kibana/kibana:8.10.2
+        container_name: kibana
+        environment:
+        - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+        - SERVER_HOST=0.0.0.0
+        ports:
+        - "5601:5601"
+        depends_on:
+        - elasticsearch
+        networks:
+            - stream-net
+    logstash:
+        image: docker.elastic.co/logstash/logstash:8.10.2
+        container_name: logstash
+        volumes:
+        - ./monitoring/logstash/config:/usr/share/logstash/config:ro
+        - ./monitoring/logstash/pipeline:/usr/share/logstash/pipeline:ro
+        ports:
+        - "5044:5044"
+        - "9600:9600"
+        environment:
+        - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+        depends_on:
+        - elasticsearch
+        networks:
+            - stream-net
+
 
 networks:
     stream-net:
@@ -363,3 +357,4 @@ volumes:
     postgres_data:
     prometheus_data:
     grafana_data:
+    elasticsearch_data:
