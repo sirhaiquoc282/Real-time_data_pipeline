@@ -1,1 +1,1 @@
-![Data pipeline architecture](asset/final_real-time_no_back.png)
+![Data pipeline architecture](assets/architecture.png.png)
