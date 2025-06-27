@@ -58,3 +58,11 @@ CREATE TABLE IF NOT EXISTS fact_view_event (
     browser_id VARCHAR,
     os_id VARCHAR
 );
+
+CREATE TABLE IF NOT EXISTS canary_message (
+    message_id UUID PRIMARY KEY,
+    message TEXT,
+    timestamp TIMESTAMP,
+    type VARCHAR
+);
+
