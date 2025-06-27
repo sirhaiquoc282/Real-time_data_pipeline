@@ -18,7 +18,9 @@ x-kafka-common: &kafka-common
         KAFKA_NUM_PARTITIONS: 3
         KAFKA_SASL_ENABLED_MECHANISMS: "PLAIN"
         KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: "PLAIN"
-        KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
+        KAFKA_OPTS: >
+            -Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf
+            -javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar=9091:/opt/jmx_exporter/kafka-metrics.yml
 
 services:
     kafka-0:
@@ -28,6 +30,8 @@ services:
         volumes:
             - kafka-data-0:/var/lib/kafka/data
             - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+            - ./monitoring/jmx-exporter/configs/kafka-metrics.yml:/opt/jmx_exporter/kafka-metrics.yml:ro
+            - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar:ro
         ports:
             - "9094:9094"
             - "9092:9092"
@@ -43,6 +47,8 @@ services:
         volumes:
             - kafka-data-1:/var/lib/kafka/data
             - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+            - ./monitoring/jmx-exporter/configs/kafka-metrics.yml:/opt/jmx_exporter/kafka-metrics.yml:ro
+            - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar:ro
         ports:
             - "9095:9094"
             - "9192:9092"
@@ -58,6 +64,8 @@ services:
         volumes:
             - kafka-data-2:/var/lib/kafka/data
             - ./kafka/config/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
+            - ./monitoring/jmx-exporter/configs/kafka-metrics.yml:/opt/jmx_exporter/kafka-metrics.yml:ro
+            - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar:ro
         ports:
             - "9096:9094"
             - "9292:9092"
@@ -86,7 +94,7 @@ services:
                     security:
                         default-group: no-roles
                         basic-auth:
-                            - username: admin
+                            -   username: admin
                                 password: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
                                 passwordHash: SHA256
                                 groups:
@@ -121,7 +129,7 @@ services:
             - spark_data:/data
             - ./spark/main:/opt/bitnami/spark/main
             - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
-            - ./monitoring/jmx-exporter/configs/spark-jmx-config.yaml:/opt/jmx_exporter/config.yaml
+            - ./monitoring/jmx-exporter/configs/spark-metrics.yaml:/opt/jmx_exporter/config.yaml
             - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar
         networks:
             - stream-net
@@ -144,6 +152,8 @@ services:
             - spark_data:/data
             - ./spark/main:/opt/bitnami/spark/main
             - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
+            - ./monitoring/jmx-exporter/configs/spark-metrics.yaml:/opt/jmx_exporter/config.yaml
+            - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar
         networks:
             - stream-net
 
@@ -165,6 +175,8 @@ services:
             - spark_data:/data
             - ./spark/main:/opt/bitnami/spark/main
             - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
+            - ./monitoring/jmx-exporter/configs/spark-metrics.yaml:/opt/jmx_exporter/config.yaml
+            - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar
         networks:
             - stream-net
 
@@ -217,6 +229,7 @@ services:
             dockerfile: Dockerfile
         volumes:
             - ./airflow/dags:/opt/airflow/dags
+            - ./airflow/plugins:/opt/airflow/plugins
             - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
         container_name: airflow-webserver
         command: airflow webserver
@@ -234,6 +247,7 @@ services:
             dockerfile: Dockerfile
         volumes:
             - ./airflow/dags:/opt/airflow/dags
+            - ./airflow/plugins:/opt/airflow/plugins
             - ./airflow/airflow.cfg:/opt/airflow/airflow.cfg
         container_name: airflow-scheduler
         command: airflow scheduler
@@ -274,7 +288,6 @@ services:
 
     prometheus:
         image: prom/prometheus:latest
-        container_name: prometheus
         ports:
             - "9090:9090"
         volumes:
@@ -285,7 +298,6 @@ services:
 
     grafana:
         image: grafana/grafana:latest
-        container_name: grafana
         ports:
             - "3000:3000"
         volumes:
@@ -300,7 +312,6 @@ services:
     
     elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
-        container_name: elasticsearch
         environment:
         - discovery.type=single-node
         - xpack.security.enabled=false
@@ -310,15 +321,16 @@ services:
         - "9300:9300"
         volumes:
         - elasticsearch_data:/usr/share/elasticsearch/data
+        - ./monitoring/elasticsearch/elasticsearch.yml:/usr/share/config/elasticsearch.yml
         networks:
             - stream-net
     
     kibana:
         image: docker.elastic.co/kibana/kibana:8.10.2
-        container_name: kibana
         environment:
         - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
         - SERVER_HOST=0.0.0.0
+        - XPACK_SECURITY_ENABLED=false
         ports:
         - "5601:5601"
         depends_on:
@@ -327,7 +339,6 @@ services:
             - stream-net
     logstash:
         image: docker.elastic.co/logstash/logstash:8.10.2
-        container_name: logstash
         volumes:
         - ./monitoring/logstash/config:/usr/share/logstash/config:ro
         - ./monitoring/logstash/pipeline:/usr/share/logstash/pipeline:ro
@@ -340,6 +351,28 @@ services:
         - elasticsearch
         networks:
             - stream-net
+# filebeat:
+#     image: docker.elastic.co/beats/filebeat:8.10.2
+#     user: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+#     volumes:
+#         - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+#         - ./monitoring/filebeat/logs:/usr/share/filebeat/logs:ro
+#     networks:
+#         - stream-net
+
+
+# postgres-exporter:
+#     image: prometheuscommunity/postgres-exporter
+#     environment:
+#         DATA_SOURCE_NAME: "postgresql://postgres:postgres@postgres-data:5432/glamira?sslmode=disable"
+#         PG_EXPORTER_WEB_LISTEN_ADDRESS: ":9187"
+#     ports:
+#     - "9187:9187"
+#     depends_on:
+#         - postgres
+#     networks:
+#         - stream-net
+
 
 
 networks:
@@ -353,7 +386,6 @@ volumes:
     kafka-data-2:
     spark_data:
     airflow_data:
-    mongo:
     postgres_data:
     prometheus_data:
     grafana_data:
