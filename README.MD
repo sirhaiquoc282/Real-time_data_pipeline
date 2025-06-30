@@ -86,11 +86,21 @@
  - **Containerization Tool**: Docker
 
 ## Deployment & Operation
- &nbsp;&nbsp;&nbsp;**1. Pull project:** ```git pull https://github.com/sirhaiquoc282/Real-time_data_pipeline.git```
+ &nbsp;&nbsp;&nbsp;**1. Pull project:** 
+ ```bash
+git pull https://github.com/sirhaiquoc282/Real-time_data_pipeline.git
+```
 
- &nbsp;&nbsp;&nbsp;**2. Docker build images:** ```docker compose up -d```
+ &nbsp;&nbsp;&nbsp;**2. Docker build images:**
+ ```bash
+ docker compose up -d
+ ```
 
- &nbsp;&nbsp;&nbsp;**3. Run Spark Job:** ```docker exec -it spark-master /bin/bash``` then
+ &nbsp;&nbsp;&nbsp;**3. Run Spark Job:** 
+```bash
+docker exec -it spark-master /bin/bash
+``` 
+then
 ```
 spark-submit \
   --master spark://spark-master:7077 \
