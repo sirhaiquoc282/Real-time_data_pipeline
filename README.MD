@@ -86,9 +86,9 @@
  - **Containerization Tool**: Docker
 
 ## Deployment & Operation
- &nbsp;&nbsp;&nbsp;**1. Pull project:** 
+ &nbsp;&nbsp;&nbsp;**1. Clone project:** 
  ```bash
-git pull https://github.com/sirhaiquoc282/Real-time_data_pipeline.git
+git clone https://github.com/sirhaiquoc282/Real-time_data_pipeline.git
 ```
 
  &nbsp;&nbsp;&nbsp;**2. Docker build images:**
