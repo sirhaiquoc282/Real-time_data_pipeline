@@ -1,19 +1,18 @@
 <h1 align="center">Real-time User Behavior Analytics Pipeline</h1>
 
-## 📑 Table of contents
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[📘 Overview](#📘-overview)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[🎯 Bussiness Requirements](#🎯-business-requirements)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[🔍 Data Source](#🔍-data-source)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[🗄️ Data Warehouse Design](#🗄️-data-warehouse-design)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[🏗️ System Architecture](#🏗️-system-architecture)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[🛠️ Technologies Used](#🛠️-technologies-used)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[🚀 Deployment & Operation](#🚀-deployment--operation)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[📊 Dashboard Sample](#📊-dashboard-sample)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[📈 System Monitoring](#📈-system-monitoring)<br>
+## Table of contents
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Overview](#overview)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Bussiness Requirements](#business-requirements)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Data Source](#data-source)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Data Warehouse Design](#data-warehouse-design)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[System Architecture & Technologies Used](#system-architecture--technologies-used)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Deployment & Operation](#deployment--operation)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dashboard Sample](#dashboard-sample)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[System Monitoring](#system-monitoring)<br>
 
-## 📘 Overview
+## Overview
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This data pipeline is designed to capture, process, and analyze real-time user behavior data from the Glamira e-commerce platform. The primary goal is to help business and marketing teams gain insights into customer interactions, such as page views, clicks, and product engagement, to improve conversion rates, optimize UX/UI, and drive data-informed marketing decisions.
-## 🎯 Business Requirements
+## Business Requirements
 &nbsp;&nbsp;&nbsp;📌 **Business Objective**<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Improve real-time understanding of user behavior in order to:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Optimize user experience on the website.<br>
@@ -40,7 +39,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Hourly distribution of views for a given product_id on the current day<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Hourly view distribution by each browser and os on the current day<br><br>
 
-## 🔍 Data Source
+## Data Source
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The primary data source of this pipeline is real-time user behavior data collected from interactions on the Glamira website across various devices and browsers. This includes actions such as viewing products, clicking banners, adding items to the cart, and initiating checkout. Once captured, these events are sent directly to Kafka, which acts as the data transport layer for the pipeline, enabling further transformation and processing downstream.
 
 &nbsp;&nbsp;&nbsp;📌 **Key Characteristics:**<br><br>
@@ -67,13 +66,13 @@
 | `store_id`     | String    | Nullable | Store ID                                             | 85                                                                                                                                                                                 |
 | `time_stamp`   | Long      | Nullable | Timestamp of the log                                 | 1716883882                                                                                                                                                                         |
 | `user_agent`   | String    | Nullable | Browser and device user-agent                        | Mozilla/5.0 (iPhone; CPU iPhone OS 13\_4\_1 like Mac OS X)...                                                                                                                      |
-## 🗄️ Data Warehouse Design:
+## Data Warehouse Design:
 ![Data Warehouse](assets/data_warehouse.png)
-## 🛠️ System Architecture & Technologies Used
+## System Architecture & Technologies Used
 
  &nbsp;&nbsp;&nbsp;**📌 System architecture diagram**<br>
  
-![Data pipeline architecture](assets/architecture.png)
+![System architecture diagram](assets/architecture.png)
 
  &nbsp;&nbsp;&nbsp;**📌 Technologies Used**<br>
  - **Message Queue:** Apache Kafka
@@ -86,7 +85,7 @@
  - **Logs Monitoring System**: Filebeat, Logstash, Elashticsearch, Kibana
  - **Containerization Tool**: Docker
 
-## 🚀 Deployment & Operation
+## Deployment & Operation
  &nbsp;&nbsp;&nbsp;**1. Pull project:** ```git pull https://github.com/sirhaiquoc282/Real-time_data_pipeline.git```
 
  &nbsp;&nbsp;&nbsp;**2. Docker build images:** ```docker compose up -d```
@@ -100,5 +99,5 @@ spark-submit \
   --py-files /opt/bitnami/spark/compressed_jobs/kafka_to_postgresql.zip \
   /opt/bitnami/spark/main/jobs/kafka_to_postgresql.py
 ```
-## 📊 Dashboard Sample
-## 📈 System Monitoring
+## Dashboard Sample
+## System Monitoring
