@@ -88,15 +88,7 @@ with DAG(
         required_workers_number=2
     )
     
-    canary_message_check = DummyOperator(
-        task_id="check_canary_message"
-    )
-    
 
     end = DummyOperator(task_id="end", trigger_rule="all_done")
 
-    start >> [kafka_check, postgres_check, spark_check]
-    
-    [postgres_check, kafka_check] >> canary_message_check
-    
-    [canary_message_check, spark_check] >> end
+    start >> [kafka_check, postgres_check, spark_check] >> end

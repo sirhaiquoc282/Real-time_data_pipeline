@@ -129,7 +129,7 @@ services:
             - spark_data:/data
             - ./spark/main:/opt/bitnami/spark/main
             - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
-            - ./monitoring/jmx-exporter/configs/spark-metrics.yaml:/opt/jmx_exporter/config.yaml
+            - ./monitoring/jmx-exporter/configs/spark-master-metrics.yaml:/opt/jmx_exporter/config.yaml
             - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar
         networks:
             - stream-net
@@ -141,18 +141,17 @@ services:
         container_name: spark-worker-1
         command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
         environment:
+            - SPARK_WORKER_OPTS=-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar=5557:/opt/jmx_exporter/config.yaml
             - SPARK_MODE=worker
             - SPARK_MASTER_URL=spark://spark-master:7077
             - SPARK_USER=spark
-            - SPARK_MASTER_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
-            - SPARK_DAEMON_JAVA_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
         depends_on:
             - spark-master
         volumes:
             - spark_data:/data
             - ./spark/main:/opt/bitnami/spark/main
             - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
-            - ./monitoring/jmx-exporter/configs/spark-metrics.yaml:/opt/jmx_exporter/config.yaml
+            - ./monitoring/jmx-exporter/configs/spark-worker-metrics.yaml:/opt/jmx_exporter/config.yaml
             - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar
         networks:
             - stream-net
@@ -164,18 +163,17 @@ services:
         container_name: spark-worker-2
         command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
         environment:
+            - SPARK_WORKER_OPTS=-javaagent:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar=5558:/opt/jmx_exporter/config.yaml
             - SPARK_MODE=worker
             - SPARK_MASTER_URL=spark://spark-master:7077
             - SPARK_USER=spark
-            - SPARK_MASTER_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
-            - SPARK_DAEMON_JAVA_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false"
         depends_on:
             - spark-master
         volumes:
             - spark_data:/data
             - ./spark/main:/opt/bitnami/spark/main
             - ./spark/compressed_spark_jobs:/opt/bitnami/spark/compressed_jobs
-            - ./monitoring/jmx-exporter/configs/spark-metrics.yaml:/opt/jmx_exporter/config.yaml
+            - ./monitoring/jmx-exporter/configs/spark-worker-metrics.yaml:/opt/jmx_exporter/config.yaml
             - ./monitoring/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar:/opt/jmx_exporter/jmx_prometheus_javaagent-0.18.0.jar
         networks:
             - stream-net
@@ -351,27 +349,34 @@ services:
         - elasticsearch
         networks:
             - stream-net
-# filebeat:
-#     image: docker.elastic.co/beats/filebeat:8.10.2
-#     user: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-#     volumes:
-#         - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-#         - ./monitoring/filebeat/logs:/usr/share/filebeat/logs:ro
-#     networks:
-#         - stream-net
+    # filebeat:
+    #     image: docker.elastic.co/beats/filebeat:8.10.2
+    #     user: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+    #     volumes:
+    #         - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    #         - ./monitoring/filebeat/logs:/usr/share/filebeat/logs:ro
+    #     networks:
+    #         - stream-net
 
 
-# postgres-exporter:
-#     image: prometheuscommunity/postgres-exporter
-#     environment:
-#         DATA_SOURCE_NAME: "postgresql://postgres:postgres@postgres-data:5432/glamira?sslmode=disable"
-#         PG_EXPORTER_WEB_LISTEN_ADDRESS: ":9187"
-#     ports:
-#     - "9187:9187"
-#     depends_on:
-#         - postgres
-#     networks:
-#         - stream-net
+    postgres-exporter:
+        image: prometheuscommunity/postgres-exporter
+        environment:
+            DATA_SOURCE_NAME: "postgresql://postgres:postgres@postgres-data:5432/glamira?sslmode=disable"
+            PG_EXPORTER_WEB_LISTEN_ADDRESS: ":9187"
+        ports:
+        - "9187:9187"
+        depends_on:
+            - postgres
+        networks:
+            - stream-net
+    
+    statsd-exporter:
+        image: prom/statsd-exporter
+        ports:
+        - "9102:9102"
+        - "8125:8125/udp"
+        restart: always
 
 
 

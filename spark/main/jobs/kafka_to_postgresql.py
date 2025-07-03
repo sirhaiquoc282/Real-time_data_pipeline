@@ -1,6 +1,7 @@
 import logging
+import json
 from pyspark.sql import DataFrame,SparkSession
-from pyspark.sql.functions import col, from_json
+from pyspark.sql.functions import col, from_json, current_timestamp
 from main.utils.config_loader import load_config
 from main.utils.spark_session import create_spark_session
 from main.schemas.kafka_schema import view_event_schema

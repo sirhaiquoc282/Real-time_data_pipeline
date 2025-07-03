@@ -13,7 +13,7 @@ consumer = KafkaConsumer(
     value_deserializer=lambda m: json.loads(m.decode("utf-8")),
 )
 producer =  KafkaProducer(
-    bootstrap_servers="localhost:9094",
+    bootstrap_servers="localhost:9095",
     security_protocol="SASL_PLAINTEXT",
     sasl_mechanism="PLAIN",
     sasl_plain_username="kafka",
@@ -23,6 +23,3 @@ for message in consumer:
     event = message.value
     producer.send(topic="product_views", value=event)
     print(f"Inserted: {event}")
-
-
-

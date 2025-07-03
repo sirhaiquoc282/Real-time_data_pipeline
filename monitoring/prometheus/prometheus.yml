@@ -7,6 +7,27 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
     
-  - job_name: 'spark'
+  - job_name: 'spark-master'
     static_configs:
-      - targets: ['spark-master:5556']
+      - targets: 
+          - 'spark-master:5556'
+          
+  - job_name: 'spark-workers'
+    static_configs:
+      - targets: 
+          - 'spark-worker-1:5557'
+          - 'spark-worker-2:5558'
+    
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+  - job_name: 'kafka'
+    static_configs:
+      - targets:
+          - 'kafka-0:9091'
+          - 'kafka-1:9091'
+          - 'kafka-2:9091'
+
+  - job_name: 'airflow'
+    static_configs:
+      - targets: ['statsd-exporter:9102']

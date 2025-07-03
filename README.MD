@@ -7,7 +7,6 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Data Warehouse Design](#data-warehouse-design)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[System Architecture & Technologies Used](#system-architecture--technologies-used)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Deployment & Operation](#deployment--operation)<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Dashboard Sample](#dashboard-sample)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[System Monitoring](#system-monitoring)<br>
 
 ## Overview
@@ -28,7 +27,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Collect user behavior data from the website (clicks, views, searches, etc.)<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Process, clean, and normalize data (~ 1.200.000 events/day) in near real-time.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Feed data into real-time dashboards (e.g., Apache Superset).<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Ensure low latency (<1 minute from user action to dashboard).<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Ensure low latency (<1 minute from user action to data warehouse).<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - Store processed data in a data warehouse (PostgreSQL) for deeper analysis.<br><br>
 &nbsp;&nbsp;&nbsp;📌 **Key Metrics / KPIs**<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Critical metrics to track include:<br>
@@ -109,5 +108,4 @@ spark-submit \
   --py-files /opt/bitnami/spark/compressed_jobs/kafka_to_postgresql.zip \
   /opt/bitnami/spark/main/jobs/kafka_to_postgresql.py
 ```
-## Dashboard Sample
 ## System Monitoring

@@ -1,0 +1,33 @@
+# ===================================================================
+# Cấu hình JMX Exporter - Dành riêng cho Spark Master
+# ===================================================================
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+  - pattern: "org.apache.spark.deploy.master.Master<name=Master><>(aliveWorkers|apps|waitingApps|workers)"
+    name: "spark_master_{$1}"
+    type: GAUGE
+
+  - pattern: 'java.lang<type=Memory><(HeapMemoryUsage|NonHeapMemoryUsage)><>((?:committed|init|max|used))'
+    name: 'jvm_memory_bytes_{$3}'
+    labels:
+      area: '$1'
+    type: GAUGE
+
+  - pattern: 'java.lang<type=GarbageCollector, name=([^>]+)><(CollectionTime|CollectionCount)>'
+    name: 'jvm_gc_collection_{$2}'
+    labels:
+      gc: '$1'
+    type: COUNTER
+
+  - pattern: 'java.lang<type=Threading><(ThreadCount|DaemonThreadCount|PeakThreadCount)>'
+    name: 'jvm_threading_{$1}'
+    type: GAUGE
+
+  - pattern: 'java.lang<type=OperatingSystem><>AvailableProcessors'
+    name: 'jvm_cpu_processors'
+    type: GAUGE
+    
+  - pattern: 'java.lang<type=OperatingSystem><ProcessCpuTime>'
+    name: 'process_cpu_seconds_total'
+    type: COUNTER

@@ -1,0 +1,40 @@
+# kafka_config.yml - Phiên bản cải tiến cho giám sát chi tiết
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+    # =================================================
+  # TOPIC - PARTITION OFFSET
+  # =================================================
+  - pattern: 'kafka.log<type=Log, name=LogEndOffset, topic=([^,]+), partition=([^>]+)><>Value'
+    name: 'kafka_topic_partition_current_offset'
+    labels:
+      topic: '$1'
+      partition: '$2'
+    type: GAUGE
+
+  # =================================================
+  # CONSUMER GROUP - OFFSET
+  # =================================================
+  - pattern: 'kafka.coordinator.group<type=ConsumerGroupMetrics, name=records-lag, client-id=([^,]+), topic=([^,]+)><>Value'
+    name: 'kafka_consumergroup_lag'
+    labels:
+      consumergroup: '$1'
+      topic: '$2'
+    type: GAUGE
+
+  - pattern: 'kafka.coordinator.group<type=ConsumerGroupMetrics, name=records-consumed-total, client-id=([^,]+), topic=([^,]+)><>Count'
+    name: 'kafka_consumergroup_current_offset'
+    labels:
+      consumergroup: '$1'
+      topic: '$2'
+    type: COUNTER
+  - pattern: 'kafka.server<type=BrokerTopicMetrics, name=PartitionCount, topic=([^>]+)><>Value'
+    name: 'kafka_topic_partitions'
+    labels:
+      topic: '$1'
+    type: GAUGE
+  - pattern: 'kafka.server<type=BrokerTopicMetrics, name=MessagesInPerSec, topic=(.+)><>Count'
+    name: kafka_topic_messages_in_total
+    labels:
+      topic: "$1"
+    type: COUNTER
