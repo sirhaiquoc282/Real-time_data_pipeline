@@ -109,3 +109,14 @@ spark-submit \
   /opt/bitnami/spark/main/jobs/kafka_to_postgresql.py
 ```
 ## System Monitoring
+ - Spark Metrics Dashboard
+
+ ![Spark Monitoring](assets/spark_monitoring.png)
+
+ - PostgreSQL Metrics Dashboard
+
+ ![PostgreSQL Monitoring](assets/postgres_monitoring.png)
+
+ - Periodic System Health Check
+ 
+ ![Periodic System Health Check](assets/periodic_system_health_check.png)
